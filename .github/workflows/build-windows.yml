@@ -1,0 +1,25 @@
+name: Build Vise-6 for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  export-windows:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.4.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Export Windows build
+        run: |
+          mkdir -p build
+          godot --headless --path . --editor --quit
+          godot --headless --path . --export-release "Windows Desktop" build/Vise6.exe
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vise-6-Windows
+          path: build/Vise6.exe
