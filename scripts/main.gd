@@ -8,7 +8,6 @@ var car: CharacterBody3D
 var camera: Camera3D
 var hud: Label
 var in_car := false
-var city_seed := 17
 
 func _ready() -> void:
     _setup_input()
@@ -24,10 +23,9 @@ func _process(_delta: float) -> void:
             _exit_car()
         elif player.global_position.distance_to(car.global_position) < 4.0:
             _enter_car()
-    if hud:
-        hud.text = "VISE-6  |  WASD: движение  |  Мышь: обзор  |  E: сесть/выйти"
-        if not in_car and player.global_position.distance_to(car.global_position) < 5.0:
-            hud.text += "\nНажми E, чтобы сесть в автомобиль"
+    hud.text = "VISE-6  |  WASD: движение  |  Мышь: обзор  |  Shift: бег  |  E: авто"
+    if not in_car and player.global_position.distance_to(car.global_position) < 5.0:
+        hud.text += "\nНажми E, чтобы сесть в автомобиль"
 
 func _setup_input() -> void:
     _add_key("move_forward", KEY_W)
@@ -60,29 +58,30 @@ func _make_world() -> void:
 
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-48, -32, 0)
-    sun.light_energy = 1.25
+    sun.light_energy = 1.2
     sun.shadow_enabled = true
-    sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
     add_child(sun)
 
-    var ground := _box(Vector3(0, -0.35, 0), Vector3(260, 0.5, 260), Color(0.18, 0.32, 0.25))
-    add_child(ground)
+    var ground_body := StaticBody3D.new()
+    ground_body.position = Vector3(0, -0.35, 0)
+    var ground_shape := CollisionShape3D.new()
+    var ground_box := BoxShape3D.new()
+    ground_box.size = Vector3(260, 0.5, 260)
+    ground_shape.shape = ground_box
+    ground_body.add_child(ground_shape)
+    add_child(ground_body)
+    add_child(_box(Vector3(0, -0.35, 0), Vector3(260, 0.5, 260), Color(0.18, 0.32, 0.25)))
 
 func _make_city() -> void:
     var rng := RandomNumberGenerator.new()
-    rng.seed = city_seed
-    var road_mat := _material(Color(0.075, 0.085, 0.095))
-    var sidewalk_mat := _material(Color(0.48, 0.48, 0.43))
+    rng.seed = 17
     for i in range(-5, 6):
-        var road_x := _box(Vector3(i * 22.0, -0.04, 0), Vector3(8, 0.12, 260), Color(0.07, 0.08, 0.09))
-        add_child(road_x)
-        var road_z := _box(Vector3(0, -0.035, i * 22.0), Vector3(260, 0.12, 8), Color(0.07, 0.08, 0.09))
-        add_child(road_z)
-        var line_x := _box(Vector3(i * 22.0, 0.035, 0), Vector3(0.12, 0.025, 260), Color(0.88, 0.72, 0.28))
-        add_child(line_x)
-        var line_z := _box(Vector3(0, 0.04, i * 22.0), Vector3(260, 0.025, 0.12), Color(0.88, 0.72, 0.28))
-        add_child(line_z)
+        add_child(_box(Vector3(i * 22.0, -0.04, 0), Vector3(8, 0.12, 260), Color(0.07, 0.08, 0.09)))
+        add_child(_box(Vector3(0, -0.035, i * 22.0), Vector3(260, 0.12, 8), Color(0.07, 0.08, 0.09)))
+        add_child(_box(Vector3(i * 22.0, 0.035, 0), Vector3(0.12, 0.025, 260), Color(0.88, 0.72, 0.28)))
+        add_child(_box(Vector3(0, 0.04, i * 22.0), Vector3(260, 0.025, 0.12), Color(0.88, 0.72, 0.28)))
 
+    var palette: Array[Color] = [Color(0.78, 0.65, 0.48), Color(0.68, 0.72, 0.73), Color(0.78, 0.77, 0.65), Color(0.53, 0.65, 0.68), Color(0.82, 0.58, 0.42)]
     for x in range(-4, 5):
         for z in range(-4, 5):
             if rng.randf() < 0.12:
@@ -92,25 +91,25 @@ func _make_city() -> void:
             var h := rng.randf_range(7.0, 23.0)
             var w := rng.randf_range(8.0, 13.0)
             var d := rng.randf_range(8.0, 13.0)
-            var palette := [Color(0.78, 0.65, 0.48), Color(0.68, 0.72, 0.73), Color(0.78, 0.77, 0.65), Color(0.53, 0.65, 0.68), Color(0.82, 0.58, 0.42)]
-            var building := _box(Vector3(px, h * 0.5, pz), Vector3(w, h, d), palette[rng.randi_range(0, palette.size() - 1)])
-            add_child(building)
-            var roof := _box(Vector3(px, h + 0.18, pz), Vector3(w + 0.25, 0.35, d + 0.25), Color(0.22, 0.25, 0.28))
-            add_child(roof)
+            add_child(_box(Vector3(px, h * 0.5, pz), Vector3(w, h, d), palette[rng.randi_range(0, palette.size() - 1)]))
+            add_child(_box(Vector3(px, h + 0.18, pz), Vector3(w + 0.25, 0.35, d + 0.25), Color(0.22, 0.25, 0.28)))
             for floor_i in range(1, int(h / 3.2)):
-                var window := _box(Vector3(px, floor_i * 3.0, pz - d * 0.501), Vector3(w * 0.72, 0.85, 0.08), Color(0.18, 0.38, 0.48))
-                add_child(window)
+                add_child(_box(Vector3(px, floor_i * 3.0, pz - d * 0.501), Vector3(w * 0.72, 0.85, 0.08), Color(0.18, 0.38, 0.48)))
 
 func _make_player() -> void:
     player = CharacterBody3D.new()
     player.set_script(PLAYER_SCRIPT)
-    player.position = Vector3(0, 1.2, 7)
+    player.position = Vector3(0, 0.05, 7)
+    var capsule := CapsuleShape3D.new()
+    capsule.radius = 0.38
+    capsule.height = 1.9
+    var collision := CollisionShape3D.new()
+    collision.shape = capsule
+    collision.position.y = 0.95
+    player.add_child(collision)
     add_child(player)
-    var body := _box(Vector3(0, 0.9, 0), Vector3(0.8, 1.8, 0.45), Color(0.12, 0.22, 0.32))
-    body.name = "BodyVisual"
-    player.add_child(body)
-    var head := _box(Vector3(0, 2.0, 0), Vector3(0.48, 0.48, 0.48), Color(0.78, 0.58, 0.42))
-    player.add_child(head)
+    player.add_child(_box(Vector3(0, 0.9, 0), Vector3(0.8, 1.8, 0.45), Color(0.12, 0.22, 0.32)))
+    player.add_child(_box(Vector3(0, 2.0, 0), Vector3(0.48, 0.48, 0.48), Color(0.78, 0.58, 0.42)))
     camera = Camera3D.new()
     camera.position = Vector3(0, 3.1, 5.8)
     camera.rotation_degrees.x = -16
@@ -121,16 +120,19 @@ func _make_player() -> void:
 func _make_car() -> void:
     car = CharacterBody3D.new()
     car.set_script(CAR_SCRIPT)
-    car.position = Vector3(4, 0.8, 7)
+    car.position = Vector3(4, 0.0, 7)
+    var car_collision := CollisionShape3D.new()
+    var car_box := BoxShape3D.new()
+    car_box.size = Vector3(2.1, 0.75, 4.0)
+    car_collision.shape = car_box
+    car_collision.position.y = 0.48
+    car.add_child(car_collision)
     add_child(car)
-    var chassis := _box(Vector3(0, 0.45, 0), Vector3(2.1, 0.65, 4.0), Color(0.72, 0.18, 0.12))
-    car.add_child(chassis)
-    var cabin := _box(Vector3(0, 1.0, -0.25), Vector3(1.65, 0.7, 1.8), Color(0.12, 0.24, 0.3))
-    car.add_child(cabin)
+    car.add_child(_box(Vector3(0, 0.45, 0), Vector3(2.1, 0.65, 4.0), Color(0.72, 0.18, 0.12)))
+    car.add_child(_box(Vector3(0, 1.0, -0.25), Vector3(1.65, 0.7, 1.8), Color(0.12, 0.24, 0.3)))
     for side in [-1.0, 1.0]:
         for z in [-1.25, 1.25]:
-            var wheel := _box(Vector3(side * 1.08, 0.15, z), Vector3(0.28, 0.65, 0.8), Color(0.025, 0.025, 0.03))
-            car.add_child(wheel)
+            car.add_child(_box(Vector3(side * 1.08, 0.15, z), Vector3(0.28, 0.65, 0.8), Color(0.025, 0.025, 0.03)))
 
 func _make_hud() -> void:
     var layer := CanvasLayer.new()
@@ -166,11 +168,8 @@ func _box(pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
     box_mesh.size = size
     mesh.mesh = box_mesh
     mesh.position = pos
-    mesh.material_override = _material(color)
-    return mesh
-
-func _material(color: Color) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
     mat.albedo_color = color
     mat.roughness = 0.78
-    return mat
+    mesh.material_override = mat
+    return mesh
